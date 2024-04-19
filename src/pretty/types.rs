@@ -3,7 +3,11 @@ pub struct NoLineBreaksString(String);
 
 impl NoLineBreaksString {
     pub fn make(s: String) -> Result<NoLineBreaksString, String> {
-        Ok(NoLineBreaksString(String::from("hi")))
+        if s.find("\n").is_some() {
+            Err(String::from("Malformed string"))
+        } else {
+            Ok(NoLineBreaksString(s))
+        }
     }
 
     pub fn unwrap(s: NoLineBreaksString) -> String {

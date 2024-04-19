@@ -14,6 +14,7 @@ fn render_simple_document_aux(document: SimpleDocument) -> Vec<String> {
         SimpleDocument::Line(nl, remain) => {
             let mut remain_vec = render_simple_document_aux(*remain);
             remain_vec.push(String::from(" ".repeat(usize::from(nl))));
+            remain_vec.push(String::from("\n"));
             remain_vec
         }
     }
@@ -63,7 +64,7 @@ mod simple_document_tests {
                 )),
             )
         });
-        let expected = "\n    hellow world2";
+        let expected = "\n     hellow world2";
         assert_render(document, expected)
     }
 }
