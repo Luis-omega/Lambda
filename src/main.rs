@@ -3,6 +3,7 @@ mod common_configuration;
 mod compiler;
 mod documentation;
 mod formatter;
+mod pretty;
 mod run;
 
 use arguments_parser::ParsedConfiguration::*;
