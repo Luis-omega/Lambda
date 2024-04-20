@@ -1,3 +1,3 @@
 pub struct PrettifierConfiguration {
-    line_width: i16,
+    pub line_width: u16,
 }

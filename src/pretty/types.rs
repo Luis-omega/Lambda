@@ -1,8 +1,8 @@
-#[derive(Debug, PartialEq, Eq)]
-pub struct NoLineBreaksString(String);
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub struct NoLineBreaksString<'a>(&'a str);
 
-impl NoLineBreaksString {
-    pub fn make(s: String) -> Result<NoLineBreaksString, String> {
+impl<'a> NoLineBreaksString<'a> {
+    pub fn make(s: &'a str) -> Result<NoLineBreaksString, String> {
         if s.find("\n").is_some() {
             Err(String::from("Malformed string"))
         } else {
@@ -10,26 +10,36 @@ impl NoLineBreaksString {
         }
     }
 
-    pub fn unwrap(s: NoLineBreaksString) -> String {
+    pub fn unwrap(s: NoLineBreaksString) -> &str {
         s.0
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
-pub enum Document {
+#[cfg(test)]
+mod no_line_breaks_string_test {
+    use crate::pretty::types::NoLineBreaksString;
+
+    #[test]
+    fn make_fails() {
+        assert_eq!(NoLineBreaksString::make(&"aome\nadsf").is_ok(), false);
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum Document<'a> {
     Empty,
-    Concat(Box<Document>, Box<Document>),
-    Text(NoLineBreaksString),
-    Nest(u16, Box<Document>),
-    Break(NoLineBreaksString),
-    Group(Box<Document>),
+    Concat(Box<Document<'a>>, Box<Document<'a>>),
+    Text(NoLineBreaksString<'a>),
+    Nest(u16, Box<Document<'a>>),
+    Break(NoLineBreaksString<'a>),
+    Group(Box<Document<'a>>),
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum SimpleDocument {
+pub enum SimpleDocument<'a> {
     Empty,
-    Text(NoLineBreaksString, Box<SimpleDocument>),
-    Line(u16, Box<SimpleDocument>),
+    Text(NoLineBreaksString<'a>, Box<SimpleDocument<'a>>),
+    Line(u16, Box<SimpleDocument<'a>>),
 }
 
 pub trait Pretty {
