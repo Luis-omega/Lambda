@@ -10,6 +10,14 @@ impl<'a> NoLineBreaksString<'a> {
         }
     }
 
+    pub fn decompose(s: &'a str) -> Vec<NoLineBreaksString<'a>> {
+        let mut out = vec![];
+        for s2 in s.split('\n') {
+            out.push(NoLineBreaksString(s2))
+        }
+        out
+    }
+
     pub fn unwrap(s: NoLineBreaksString) -> &str {
         s.0
     }

@@ -40,21 +40,32 @@ mod simple_document_tests {
         assert_render(document, expected)
     }
 
-    //TODO:Fixme this is wrong, you need two documents
-    //and check that this concatenates
     #[test]
     fn single_text() {
-        let raw = "hellow world";
-        let document = NoLineBreaksString::make(&raw)
+        let raw1 = "hello world";
+        let raw2 = ", bye world";
+        let non_raw1 = NoLineBreaksString::make(&raw1).ok();
+        let document = NoLineBreaksString::make(&raw2)
             .ok()
-            .map(|x| SimpleDocument::Text(x, Box::new(SimpleDocument::Empty)));
-        let expected = "hellow world";
+            .map(|x| {
+                non_raw1.map(|y| {
+                    SimpleDocument::Text(
+                        y,
+                        Box::new(SimpleDocument::Text(
+                            x,
+                            Box::new(SimpleDocument::Empty),
+                        )),
+                    )
+                })
+            })
+            .flatten();
+        let expected = "hello world, bye world";
         assert_render(document, expected)
     }
 
     #[test]
     fn single_line() {
-        let raw = "hellow world2";
+        let raw = "hello world2";
         let document = NoLineBreaksString::make(&raw).ok().map(|x| {
             SimpleDocument::Line(
                 5,
@@ -64,7 +75,7 @@ mod simple_document_tests {
                 )),
             )
         });
-        let expected = "\n     hellow world2";
+        let expected = "\n     hello world2";
         assert_render(document, expected)
     }
 }
@@ -149,6 +160,7 @@ fn document_to_simple_document_aux<'a>(
     param: &mut Vec<FitsParam<'a>>,
 ) -> SimpleDocument<'a> {
     println!("new_iter: {:?}", param);
+    println!("params: width={}, consumed={}", width, consumed);
     let next = param.pop();
     println!("taken: {:?}", next);
     match next {
@@ -204,7 +216,12 @@ fn document_to_simple_document_aux<'a>(
                         usize::from(ident),
                         param,
                     );
-                    SimpleDocument::Line(ident, Box::from(remain))
+                    SimpleDocument::Line(
+                        ident,
+                        //The paper is wrong here, they forgot to
+                        //put the text inside the break
+                        Box::from(SimpleDocument::Text(s, Box::from(remain))),
+                    )
                 }
             },
             Document::Group(remain) => {
@@ -225,7 +242,7 @@ fn document_to_simple_document_aux<'a>(
                 } else {
                     param.push(FitsParam {
                         ident,
-                        mode: Mode::Flat,
+                        mode: Mode::Break,
                         doc: *remain_copy,
                     });
                     document_to_simple_document_aux(width, consumed, param)
@@ -260,11 +277,13 @@ pub fn render(
     document: Document,
 ) -> String {
     let simple = document_to_simple_document(configuration, document);
+    println!("SIMPLE: {:?}", simple);
     render_simple_document(simple)
 }
 
 #[cfg(test)]
 mod render_tests {
+    use crate::pretty::combinators;
     use crate::pretty::configuration::PrettifierConfiguration;
     use crate::pretty::pretty::render;
     use crate::pretty::types::{Document, NoLineBreaksString, SimpleDocument};
@@ -281,7 +300,7 @@ mod render_tests {
 
     #[test]
     fn concat() {
-        let raw1 = "hellow world";
+        let raw1 = "hello world";
         let raw2 = " bye world";
         let document1 = NoLineBreaksString::make(&raw1)
             .ok()
@@ -303,12 +322,42 @@ mod render_tests {
 
     #[test]
     fn text() {
-        let raw = "hellow world";
+        let raw = "hello world";
         let document = NoLineBreaksString::make(&raw)
             .ok()
             .map(|x| Document::Text(x));
         let conf = mk_conf(10);
         assert_eq!(Some(String::from(raw)), document.map(|x| render(conf, x)))
+    }
+
+    #[test]
+    fn nest_break_group() {
+        let document = NoLineBreaksString::make("world").map(|x| {
+            combinators::group(combinators::concat(
+                combinators::from_str("hello"),
+                combinators::nest(3, combinators::break_(x)),
+            ))
+        });
+        let conf = mk_conf(2);
+        assert_eq!(
+            Ok(String::from("hello\n   world")),
+            document.map(|x| render(conf, x))
+        )
+    }
+
+    #[test]
+    fn nest_break_group_flat() {
+        let document = NoLineBreaksString::make("world").map(|x| {
+            combinators::group(combinators::concat(
+                combinators::from_str("hello"),
+                combinators::nest(3, combinators::break_(x)),
+            ))
+        });
+        let conf = mk_conf(20);
+        assert_eq!(
+            Ok(String::from("helloworld")),
+            document.map(|x| render(conf, x))
+        )
     }
 }
 

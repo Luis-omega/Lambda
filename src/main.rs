@@ -1,6 +1,7 @@
 mod arguments_parser;
 mod common_configuration;
 mod compiler;
+mod core;
 mod documentation;
 mod formatter;
 mod pretty;
